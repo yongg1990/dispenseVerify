@@ -1,0 +1,11 @@
+{
+  "name": "中药房工作台",
+  "appid": "",
+  "description": "中药包验收、患者核对发药及病区接收",
+  "versionName": "0.1.0",
+  "versionCode": "100",
+  "transformPx": false,
+  "vueVersion": "3",
+  "h5": { "title": "中药房工作台", "router": { "mode": "hash" } },
+  "app-plus": { "usingComponents": true, "distribute": { "android": { "permissions": ["<uses-permission android:name=\"android.permission.CAMERA\"/>"] } } }
+}

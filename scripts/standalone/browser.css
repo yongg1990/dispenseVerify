@@ -1,0 +1,16 @@
+html { min-height: 100%; }
+body { color: var(--ink); font: 14px/1.5 -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+input { border: 0; outline: 0; background: transparent; }
+button { cursor: pointer; }
+button:disabled { cursor: not-allowed; }
+.app-icon { object-fit: contain; }
+.sheet-scroll { display: block; overflow-y: auto; overscroll-behavior: contain; }
+.static-scan-list { overflow-y: auto; overscroll-behavior: contain; }
+.browser-toast { position: fixed; z-index: 150; left: 50%; top: 45%; transform: translate(-50%, -50%); width: max-content; max-width: min(86vw, 420px); padding: 13px 18px; border-radius: 6px; background: #213936ed; color: white; font-size: 13px; text-align: center; overflow-wrap: anywhere; box-shadow: 0 4px 20px #10272320; pointer-events: none; }
+.browser-toast[hidden] { display: none; }
+.browser-action-mask { z-index: 120; }
+.browser-action-sheet { max-height: 85vh; overflow-y: auto; }
+.browser-action-option { display: flex; width: 100%; min-height: 50px; padding: 12px 4px; border-bottom: 1px solid var(--line); border-radius: 0; color: var(--ink); text-align: left; overflow-wrap: anywhere; }
+.browser-action-option:hover { background: #edf5f0; }
+.browser-action-cancel { margin-top: 10px; color: var(--teal); }
+@media (max-height: 600px) { .confirmation-sheet { max-height: 96vh; } .sheet-scroll { max-height: 52vh; } }

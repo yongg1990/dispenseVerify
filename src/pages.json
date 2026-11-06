@@ -1,0 +1,13 @@
+{
+  "pages": [
+    { "path": "pages/home/index", "style": { "navigationStyle": "custom" } },
+    { "path": "pages/accept/index", "style": { "navigationStyle": "custom" } },
+    { "path": "pages/dispense/index", "style": { "navigationStyle": "custom" } },
+    { "path": "pages/accept-records/index", "style": { "navigationStyle": "custom" } },
+    { "path": "pages/dispense-records/index", "style": { "navigationStyle": "custom" } },
+    { "path": "pages/receive-records/index", "style": { "navigationStyle": "custom" } },
+    { "path": "pages/ward-receive/index", "style": { "navigationStyle": "custom" } },
+    { "path": "pages/profile/index", "style": { "navigationStyle": "custom" } }
+  ],
+  "globalStyle": { "navigationBarTitleText": "中药房工作台", "backgroundColor": "#f5f7fa" }
+}
