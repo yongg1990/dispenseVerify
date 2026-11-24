@@ -3,13 +3,22 @@
     <view class="profile-header"><view class="profile-avatar">{{ operator.name.slice(0, 1) }}</view><view><text class="page-title">{{ operator.name }}</text><text class="row-subtitle">{{ operator.department }} · {{ businessLabel }}业务</text></view><text class="shift-badge">当班中</text></view>
     <view class="section-heading"><text>工作信息</text></view>
     <view class="settings-list"><view class="setting-row"><text>所属医院</text><text>{{ hospital.name }}</text></view><view class="setting-row"><text>医院编码</text><text>{{ hospital.id || '--' }}</text></view><view class="setting-row"><text>当前操作人</text><text>{{ operator.name }} / {{ operator.id }}</text></view><view class="setting-row"><text>运行环境</text><text class="amber-text">{{ useStaticData ? '静态数据' : '接口模式' }}</text></view><view class="setting-row"><text>HIS / 短信服务</text><text class="muted">{{ useStaticData ? '未连接' : '由服务端处理，未提供查询接口' }}</text></view></view>
+    <button class="secondary-button card-action" :disabled="loggingOut" @click="logout">{{ loggingOut ? '退出中' : '退出登录' }}</button>
     <view class="version-text">中药房工作台 v0.1.0</view>
   </AppShell>
 </template>
 <script setup>
 import { useStaticData } from '../../services/data-source'
+import { ref } from 'vue'
+import { logoutUser } from '../../services/auth'
 import AppShell from '../../components/AppShell.vue'
-import { operator, hospital, businessLabel } from '../../domain/pharmacy'
+import { operator, hospital, businessLabel, toast } from '../../domain/pharmacy'
+const loggingOut = ref(false)
+async function logout() {
+  if (loggingOut.value) return
+  loggingOut.value = true
+  try { await logoutUser() } catch (error) { toast(error.message) } finally { loggingOut.value = false }
+}
 </script>
 
 <style scoped>

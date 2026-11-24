@@ -31,7 +31,7 @@ function routeTo({ url }) {
   window.scrollTo(0, 0)
 }
 
-function showToast({ title, duration = 2200 }) {
+function showToast({ title, duration = 2000 }) {
   let toast = document.getElementById('browser-toast')
   if (!toast) {
     toast = document.createElement('div')

@@ -1,12 +1,13 @@
 <template>
-  <AppShell title="中药房工作台" active="home" @business-change="refresh">
+  <AppShell title="中药房工作台" active="home" @business-change="refresh" @conflict="refresh">
+    <HospitalSwitcher @change="refresh" />
     <view class="welcome-row"><view><view class="eyebrow">{{ dateText }} · {{ weekday }}</view><text class="welcome-title">{{ greeting }}，{{ operator.name }}</text></view><view class="shift-badge"><view class="live-dot" />当班中</view></view>
     <view class="overview-band">
       <view class="overview-heading"><text class="overview-label">今日业务概览</text></view>
       <view class="overview-stats">
-        <view class="overview-metric"><text class="overview-number">{{ todayCount('accept') }}</text><text class="overview-unit">已验收 / 条</text></view>
-        <view class="overview-divider" />
-        <view class="overview-metric"><text class="overview-number">{{ todayCount('dispense') }}</text><text class="overview-unit">已发药 / 条</text></view>
+        <view v-if="can('accept')" class="overview-metric"><text class="overview-number">{{ todayCount('accept') }}</text><text class="overview-unit">已验收 / 条</text></view>
+        <view v-if="can('accept') && can('dispense')" class="overview-divider" />
+        <view v-if="can('dispense')" class="overview-metric"><text class="overview-number">{{ todayCount('dispense') }}</text><text class="overview-unit">已发药 / 条</text></view>
       </view>
     </view>
     <view class="section-heading"><text>业务办理</text><text class="section-meta">{{ businessLabel }}业务</text></view>
@@ -20,7 +21,7 @@
         </view>
       </button>
     </view>
-    <view class="section-heading recent-heading"><text>最近操作</text><button class="text-button" @click="navigate('dispense-records')">查看全部<AppIcon name="chevron-right" :size="14" /></button></view>
+    <view class="section-heading recent-heading"><text>最近操作</text><button class="text-button" @click="navigate(can('dispense') ? 'dispense-records' : 'accept-records')">查看全部<AppIcon name="chevron-right" :size="14" /></button></view>
     <view class="activity-list">
       <view v-for="record in recent" :key="record.entryId" :class="['activity-item', `activity-${record.kind}`]">
         <view :class="['activity-icon', record.kind === 'accept' ? 'blue' : record.kind === 'receive' ? 'amber' : 'teal']"><AppIcon :name="record.kind === 'accept' ? 'package-check' : record.kind === 'receive' ? 'clipboard-check' : 'pill'" :size="19" /></view>
@@ -28,6 +29,7 @@
         <text class="activity-time">{{ record.time.slice(11, 16) }}</text>
       </view>
     </view>
+    <EmptyState v-if="!recent.length" icon-only title="暂无最近操作" />
     <view class="environment-note"><view class="live-dot" /><text>{{ useStaticData ? '静态数据' : '接口模式' }}</text><text class="note-separator">·</text><text>{{ useStaticData ? '演示环境' : '业务状态以服务端为准' }}</text></view>
   </AppShell>
 </template>
@@ -37,7 +39,11 @@ import { useStaticData } from '../../services/data-source'
 import { onShow } from '@dcloudio/uni-app'
 import AppShell from '../../components/AppShell.vue'
 import AppIcon from '../../components/AppIcon.vue'
-import { state, operator, hospital, businessLabel, todayCount, defaultDispenseRows, refreshOverview, navigate, toast } from '../../domain/pharmacy'
+import EmptyState from '../../components/EmptyState.vue'
+import HospitalSwitcher from '../../components/HospitalSwitcher.vue'
+import { getSession } from '../../services/prescription'
+import { canAccessPage } from '../../services/permissions'
+import { state, operator, hospital, businessLabel, todayCount, defaultDispenseRows, refreshOverview, navigate, toast, can } from '../../domain/pharmacy'
 onShow(() => refresh())
 async function refresh() { try { await refreshOverview() } catch (error) { toast(error.message) } }
 const now = new Date()
@@ -48,10 +54,12 @@ const awaitingWard = computed(() => state.pendingWardCount ?? '--')
 const tiles = computed(() => [
   { path: 'accept', icon: 'package-check', color: 'blue', title: '药包验收', subtitle: '药房药包入库验收', count: state.pendingAcceptanceCount ?? '--', unit: '条待验收' },
   state.business === 'inpatient' ? { path: 'ward-receive', icon: 'clipboard-check', color: 'teal', title: '病区接收', subtitle: '药包扫码 · 病区接收', count: awaitingWard.value, unit: '条待接收' } : { path: 'dispense', icon: 'pill', color: 'teal', title: '患者发药', subtitle: '患者核对 · 药包发放', count: defaultDispenseRows.value.length, unit: '条待发药' },
+  ...(state.business === 'inpatient' ? [{ path: 'inpatient-dispense', icon: 'pill', color: 'blue', title: '住院发药', subtitle: '药包核验 · 确认发药', count: defaultDispenseRows.value.length, unit: '条待发药' }, { path: 'receive-records', icon: 'clipboard-check', color: 'teal', title: '接收明细', subtitle: '病区接收操作记录', count: todayCount('receive'), unit: '条今日接收' }] : []),
+  { path: 'waybill-accept', icon: 'package', color: 'amber', title: '整单验收', subtitle: '按运单验收药包', count: '', unit: '运单查询' },
   { path: 'accept-records', icon: 'clipboard-list', color: 'amber', title: '验收明细', subtitle: '药包验收操作记录', count: todayCount('accept'), unit: '条今日验收' },
   { path: 'dispense-records', icon: 'file-check-2', color: 'violet', title: '发药明细', subtitle: '患者发药操作记录', count: todayCount('dispense'), unit: '条今日发药' }
-])
-const recent = computed(() => state.records.filter(r => r.hospitalId === hospital.id && r.business === state.business && r.kind !== 'receive').slice().sort((a, b) => b.time.localeCompare(a.time)).slice(0, 3))
+].filter(tile => canAccessPage(tile.path, state.business, getSession())))
+const recent = computed(() => state.records.filter(r => r.hospitalId === hospital.id && r.business === state.business && r.kind !== 'receive' && can(r.kind)).slice().sort((a, b) => b.time.localeCompare(a.time)).slice(0, 3))
 </script>
 
 <style scoped>

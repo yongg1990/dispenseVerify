@@ -53,6 +53,7 @@ function createRow(id, mode, name, patientNo, status, batch = null) {
     logisticsRecordId: `LOG-${id}-${batch || '01'}`, packageCode: `PKG-${id}-${batch || '01'}`,
     waybillNo: `WB-${id}-${batch || '01'}`, mode,
     patientName: name, registrationNo: `DJ-${4100 + Number(patientNo) - 1001}`,
+    patientGender: ['M2', 'M5', 'Z2', 'Z4'].includes(id) ? '男' : '女', patientAge: 30 + Number(patientNo) % 40,
     visitNo: `JZ-${patientNo}`, inpatientNo: inpatient ? `ZY-${patientNo}` : '',
     idCard: `11010119900101${patientNo}`, prescriptionNo: `CF-${inpatient ? 'ZY' : 'MZ'}-${patientNo}`,
     doseCount: batch ? 7 : 14, pickupType: inpatient ? '代煎配送' : Number(patientNo) % 2 ? '代煎自取' : '配送自取',
@@ -124,7 +125,7 @@ export async function staticPrescription(path, body) {
       const row = findRow(body)
       if (row.dispensedAt) return { ...row, alreadyDispensed: true }
       if (!row.accepted) throw new Error('药包尚未验收')
-      if (body.mode === '1' && tokens.get(body.scanToken)?.verified !== row) throw new Error('请先完成患者与药包核对')
+      if (body.mode === '1' && body.manual !== true && tokens.get(body.scanToken)?.verified !== row) throw new Error('请先完成患者与药包核对')
       if (body.mode === '2' && row.wardCode !== body.wardCode) throw new Error('药包病区与当前病区不一致')
       Object.assign(row, { status: 'dispensed', dispensedAt: at(new Date().toTimeString().slice(0, 8)), dispensedByName: staticSession.operatorName })
       if (body.scanToken) tokens.delete(body.scanToken)

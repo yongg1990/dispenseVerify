@@ -1,13 +1,11 @@
 <template>
   <view class="prescription-card">
-    <view class="card-top"><view class="patient-name">{{ row.name }}<text v-if="row.bed" class="bed-label">{{ row.bed }} 床</text></view><text :class="['status-badge', row.status]">{{ statusLabels[row.status] || row.status || '--' }}</text></view>
-    <view class="prescription-number">{{ row.no }}</view>
+    <view class="card-top"><PatientSummary :row="row" prescription-header /><text :class="['status-badge', row.status]">{{ statusLabels[row.status] || row.status || '--' }}</text></view>
     <view class="card-tags"><text class="way-tag">{{ row.way }}</text><text v-if="row.split" class="batch-tag">拆分 · 批次 {{ row.batch }}</text><text v-else class="muted small">普通处方</text></view>
-    <view class="data-grid">
-      <view><text class="field-label">剂数</text><text class="field-value">{{ row.dose }} 剂</text></view>
-      <view><text class="field-label">途径 / 频次</text><text class="field-value">{{ row.route }} / {{ row.frequency }}</text></view>
-      <view><text class="field-label">处方时间</text><text class="field-value">{{ row.prescriptionDate }}</text></view>
-      <view><text class="field-label">{{ row.business === 'inpatient' ? '住院号' : '登记号' }}</text><text class="field-value">{{ row.inpatientNo || row.registrationNo }}</text></view>
+    <view class="prescription-details">
+      <view class="details-heading"><text>处方明细</text><text class="section-meta">每剂用量</text></view>
+      <view class="ingredient-grid"><view v-for="(ingredient, index) in row.ingredients" :key="index" class="ingredient-row"><text class="ingredient-name">{{ ingredient.name }}</text><text class="ingredient-dose">{{ ingredient.grams }}g</text></view></view>
+      <text v-if="!row.ingredients?.length" class="muted">暂无处方明细</text>
     </view>
     <view v-if="row.acceptedAt" class="card-foot"><AppIcon name="circle-check" :size="14" /><text>已验收 {{ row.acceptedAt }}</text></view>
     <view v-if="row.business === 'inpatient' && row.acceptedAt" class="ward-state">{{ row.received || row.receivedAt ? '病区已接收' : '待病区接收' }}</view>
@@ -16,6 +14,17 @@
 </template>
 <script setup>
 import AppIcon from './AppIcon.vue'
+import PatientSummary from './PatientSummary.vue'
 import { statusLabels } from '../domain/pharmacy'
 defineProps({ row: { type: Object, required: true } })
 </script>
+<style scoped>
+.card-top { align-items: flex-start; }
+.card-tags { margin-top: 10px; }
+.prescription-details { margin-top: 18px; }
+.details-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; color: #264653; font-size: 14px; font-weight: 600; }
+.ingredient-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 20px; }
+.ingredient-row { display: flex; align-items: baseline; gap: 6px; min-width: 0; padding: 9px 0; border-bottom: 1px solid #edf2f3; font-size: 14px; }
+.ingredient-name { min-width: 0; overflow-wrap: anywhere; color: #405d79; }
+.ingredient-dose { flex-shrink: 0; color: #147d73; }
+</style>
