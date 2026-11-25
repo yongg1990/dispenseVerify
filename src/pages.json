@@ -1,4 +1,9 @@
 {
+  "easycom": {
+    "custom": {
+      "^uni-icons$": "@dcloudio/uni-ui/lib/uni-icons/uni-icons.vue"
+    }
+  },
   "pages": [
     { "path": "pages/login/index", "style": { "navigationStyle": "custom" } },
     { "path": "pages/home/index", "style": { "navigationStyle": "custom" } },

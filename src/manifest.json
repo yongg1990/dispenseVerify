@@ -6,6 +6,6 @@
   "versionCode": "100",
   "transformPx": false,
   "vueVersion": "3",
-  "h5": { "title": "中药房工作台", "router": { "mode": "hash" } },
+  "h5": { "title": "中药房工作台", "router": { "mode": "hash", "base": "/dispenseVerify/" } },
   "app-plus": { "usingComponents": true, "distribute": { "android": { "permissions": ["<uses-permission android:name=\"android.permission.CAMERA\"/>"] } } }
 }

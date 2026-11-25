@@ -1,7 +1,6 @@
 <template>
-  <AppShell title="病区接收" active="ward-receive" back nursing @business-change="reset" @conflict="refresh">
+  <AppShell title="病区接收" active="ward-receive" back nursing business-picker @business-change="reset" @ward-change="reset" @conflict="refresh">
     <template v-if="state.business === 'inpatient'">
-      <view class="page-heading"><text class="page-title">{{ currentWard.station }}</text><text class="muted">{{ operator.name }}</text></view>
       <view class="record-toolbar"><view class="range-switch entry-switch"><button :class="{ active: entry === 'scan' }" :disabled="submitting" @click="entry = 'scan'">扫码接收</button><button :class="{ active: entry === 'manual' }" :disabled="submitting" @click="entry = 'manual'">批量接收</button></view></view>
       <template v-if="entry === 'scan'">
       <ScanPanel title="扫描药包二维码" subtitle="住院药包 · 病区接收" @scan="scan" />
@@ -48,7 +47,7 @@ async function refresh() {
   if (state.business !== 'inpatient') return
   try { await refreshRequests([() => loadWardPending(), () => loadToday('receive')]) } catch (error) { toast(error.message) }
 }
-function reset() { entry.value = 'scan'; code.value = ''; selected.value = null; checkedIds.value = []; batchErrors.value = {}; refresh() }
+function reset() { code.value = ''; selected.value = null; checkedIds.value = []; batchErrors.value = {}; refresh() }
 async function lookup() {
   if (loading.value || submitting.value) return
   selected.value = null; loading.value = true

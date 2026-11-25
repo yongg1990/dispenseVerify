@@ -1,9 +1,9 @@
 <template>
   <view class="app-shell login-page">
-    <view class="login-brand"><view class="brand-mark"><AppIcon name="pill" :size="25" /></view><text class="login-title">中药房工作台</text><text class="login-caption">药包验收 · 患者发药 · 病区接收</text></view>
+    <view class="login-brand"><view class="brand-mark"><AppIcon name="pill" :size="28" /></view><text class="login-title">中药房工作台</text></view>
     <view class="login-form">
-      <view class="login-field"><text><text class="required-mark">*</text>账号</text><view class="search-field"><AppIcon name="user-round" :size="19" /><input v-model="loginName" :disabled="busy" :maxlength="-1" placeholder="请输入登录账号" /></view></view>
-      <view class="login-field"><text><text class="required-mark">*</text>密码</text><view class="search-field"><AppIcon name="shield-check" :size="19" /><input v-model="password" :disabled="busy" :maxlength="-1" password placeholder="请输入密码" confirm-type="done" @confirm="login" /></view></view>
+      <view class="login-field"><text>账号</text><view class="search-field"><AppIcon name="user-round" :size="19" /><input v-model="loginName" :disabled="busy" :maxlength="-1" placeholder="请输入登录账号" /></view></view>
+      <view class="login-field"><text>密码</text><view class="search-field"><AppIcon name="shield-check" :size="19" /><input v-model="password" :disabled="busy" :maxlength="-1" password placeholder="请输入密码" confirm-type="done" @confirm="login" /></view></view>
       <button class="primary-button card-action" :disabled="busy || hospitalVisible || wardVisible || !canSubmit" @click="login"><AppIcon name="shield-check" :size="19" />{{ busy ? '登录中' : '登录工作台' }}</button>
     </view>
     <view v-if="hospitalVisible" class="modal-mask hospital-mask">
@@ -63,7 +63,7 @@ async function completeLogin() {
 function confirmWard(wardName) {
   const session = getSession()
   if (!session.token) return
-  saveSession({ ...session, wardName, wardCode: '' })
+  saveSession({ ...session, wardName, wardCode: wardName })
   wardVisible.value = false
   enterHome()
 }
@@ -91,16 +91,18 @@ async function login() {
 }
 </script>
 <style scoped>
-.login-page { padding: calc(48px + env(safe-area-inset-top)) 28px 40px; }
-.login-brand { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 12px 0 36px; border-bottom: 1px solid var(--line); }
-.login-title { font-size: 25px; font-weight: 650; }
-.login-caption { color: var(--muted); font-size: 12px; text-align: center; }
-.login-form { padding-top: 28px; }
-.login-field { margin-top: 18px; display: flex; flex-direction: column; gap: 8px; }
-.login-field > text { font-size: 12px; color: #637e80; }
-.required-mark { color: #d93025; margin-right: 4px; }
+.login-page { padding: calc(76px + env(safe-area-inset-top)) 32px 40px; background: #fff; }
+.login-brand { display: flex; align-items: center; gap: 14px; padding-bottom: 36px; }
+.login-brand .brand-mark { width: 54px; height: 54px; flex-basis: 54px; }
+.login-title { min-width: 0; font-size: 26px; font-weight: 650; line-height: 1.4; white-space: nowrap; }
+.login-form { padding-top: 8px; }
+.login-field { display: flex; flex-direction: column; gap: 9px; margin-bottom: 24px; }
+.login-field > text { color: #53565d; font-size: 14px; font-weight: 500; }
+.login-field .search-field { background: #f5f5f7; border-color: #f0f0f3; }
+.login-field input { height: 50px; }
+.app-shell .login-form .card-action { min-height: 50px; margin-top: 34px; }
 .hospital-mask { align-items: center; padding: 20px; }
 .hospital-dialog { width: 100%; max-width: 420px; max-height: 85vh; overflow-y: auto; padding: 22px; border-radius: 8px; background: #fff; }
 .hospital-heading { display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 600; }
-.hospital-empty { display: block; margin-top: 14px; color: var(--muted); font-size: 12px; line-height: 1.6; }
+.hospital-empty { display: block; margin-top: 18px; color: var(--muted); font-size: 14px; line-height: 1.6; }
 </style>

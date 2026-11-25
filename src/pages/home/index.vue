@@ -1,25 +1,23 @@
 <template>
-  <AppShell title="中药房工作台" active="home" @business-change="refresh" @conflict="refresh">
-    <HospitalSwitcher @change="refresh" />
-    <view class="welcome-row"><view><view class="eyebrow">{{ dateText }} · {{ weekday }}</view><text class="welcome-title">{{ greeting }}，{{ operator.name }}</text></view><view class="shift-badge"><view class="live-dot" />当班中</view></view>
-    <view class="overview-band">
-      <view class="overview-heading"><text class="overview-label">今日业务概览</text></view>
-      <view class="overview-stats">
-        <view v-if="can('accept')" class="overview-metric"><text class="overview-number">{{ todayCount('accept') }}</text><text class="overview-unit">已验收 / 条</text></view>
-        <view v-if="can('accept') && can('dispense')" class="overview-divider" />
-        <view v-if="can('dispense')" class="overview-metric"><text class="overview-number">{{ todayCount('dispense') }}</text><text class="overview-unit">已发药 / 条</text></view>
-      </view>
+  <AppShell title="工作台" active="home" business-picker @business-change="refresh" @ward-change="refresh" @conflict="refresh">
+    <template #header-caption><HospitalSwitcher compact @change="refreshHospital" /></template>
+    <view class="home-overview">
+      <view class="today-label"><text>{{ dateText }}</text><text class="today-weekday">{{ weekday }}</text></view>
+      <view v-if="can('accept')" class="today-metric"><text class="today-number">{{ todayCount('accept') }}</text><text>已验收</text></view>
+      <view v-if="can('dispense')" class="today-metric"><text class="today-number">{{ todayCount('dispense') }}</text><text>已发药</text></view>
     </view>
-    <view class="section-heading"><text>业务办理</text><text class="section-meta">{{ businessLabel }}业务</text></view>
-    <view class="home-grid">
-      <button v-for="tile in tiles" :key="tile.path" class="home-tile" @click="navigate(tile.path)">
-        <view :class="['tile-icon', tile.color]"><AppIcon :name="tile.icon" :size="25" /></view>
-        <view class="tile-copy">
-          <text class="tile-title">{{ tile.title }}</text>
-          <text class="tile-subtitle">{{ tile.subtitle }}</text>
-          <view class="tile-stat"><text class="tile-count">{{ tile.count }}</text><text>{{ tile.unit }}</text></view>
-        </view>
+    <view class="section-heading"><text>业务办理</text></view>
+    <view class="operation-list">
+      <button v-for="tile in operationTiles" :key="tile.path" :class="['operation-row', `operation-${tile.color}`]" @click="navigate(tile.path)">
+        <view :class="['tile-icon', tile.color]"><AppIcon :name="tile.icon" :size="23" /></view>
+        <text class="grow operation-title">{{ tile.title }}</text>
+        <view class="operation-stat"><text v-if="tile.count !== ''" class="operation-count">{{ tile.count }}</text><text>{{ tile.unit }}</text></view>
+        <AppIcon name="chevron-right" :size="16" />
       </button>
+    </view>
+    <view class="section-heading"><text>业务明细</text></view>
+    <view class="entry-list">
+      <button v-for="tile in recordTiles" :key="tile.path" class="entry-row" @click="navigate(tile.path)"><AppIcon :name="tile.icon" :size="20" /><text class="grow">{{ tile.title }}</text><text class="entry-count">{{ tile.count }}</text><AppIcon name="chevron-right" :size="16" /></button>
     </view>
     <view class="section-heading recent-heading"><text>最近操作</text><button class="text-button" @click="navigate(can('dispense') ? 'dispense-records' : 'accept-records')">查看全部<AppIcon name="chevron-right" :size="14" /></button></view>
     <view class="activity-list">
@@ -30,12 +28,10 @@
       </view>
     </view>
     <EmptyState v-if="!recent.length" icon-only title="暂无最近操作" />
-    <view class="environment-note"><view class="live-dot" /><text>{{ useStaticData ? '静态数据' : '接口模式' }}</text><text class="note-separator">·</text><text>{{ useStaticData ? '演示环境' : '业务状态以服务端为准' }}</text></view>
   </AppShell>
 </template>
 <script setup>
-import { computed } from 'vue'
-import { useStaticData } from '../../services/data-source'
+import { computed, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import AppShell from '../../components/AppShell.vue'
 import AppIcon from '../../components/AppIcon.vue'
@@ -43,13 +39,22 @@ import EmptyState from '../../components/EmptyState.vue'
 import HospitalSwitcher from '../../components/HospitalSwitcher.vue'
 import { getSession } from '../../services/prescription'
 import { canAccessPage } from '../../services/permissions'
-import { state, operator, hospital, businessLabel, todayCount, defaultDispenseRows, refreshOverview, navigate, toast, can } from '../../domain/pharmacy'
-onShow(() => refresh())
+import { state, hospital, todayCount, defaultDispenseRows, refreshOverview, navigate, toast, can } from '../../domain/pharmacy'
+const now = ref(new Date())
+const dateText = computed(() => `${now.value.getMonth() + 1}月${now.value.getDate()}日`)
+const weekday = computed(() => ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'][now.value.getDay()])
+onShow(() => { now.value = new Date(); refresh() })
 async function refresh() { try { await refreshOverview() } catch (error) { toast(error.message) } }
-const now = new Date()
-const dateText = `${now.getMonth() + 1}月${now.getDate()}日`
-const weekday = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'][now.getDay()]
-const greeting = now.getHours() < 12 ? '上午好' : now.getHours() < 18 ? '下午好' : '晚上好'
+const changingHospital = ref(false)
+async function refreshHospital() {
+  if (changingHospital.value) return
+  changingHospital.value = true
+  uni.showLoading({ title: '切换机构中', mask: true })
+  let failure
+  try { await refreshOverview() } catch (error) { failure = error }
+  finally { changingHospital.value = false; uni.hideLoading() }
+  if (failure) toast(failure.message)
+}
 const awaitingWard = computed(() => state.pendingWardCount ?? '--')
 const tiles = computed(() => [
   { path: 'accept', icon: 'package-check', color: 'blue', title: '药包验收', subtitle: '药房药包入库验收', count: state.pendingAcceptanceCount ?? '--', unit: '条待验收' },
@@ -59,28 +64,28 @@ const tiles = computed(() => [
   { path: 'accept-records', icon: 'clipboard-list', color: 'amber', title: '验收明细', subtitle: '药包验收操作记录', count: todayCount('accept'), unit: '条今日验收' },
   { path: 'dispense-records', icon: 'file-check-2', color: 'violet', title: '发药明细', subtitle: '患者发药操作记录', count: todayCount('dispense'), unit: '条今日发药' }
 ].filter(tile => canAccessPage(tile.path, state.business, getSession())))
+const operationTiles = computed(() => tiles.value.filter(tile => !tile.path.endsWith('-records')))
+const recordTiles = computed(() => tiles.value.filter(tile => tile.path.endsWith('-records')))
 const recent = computed(() => state.records.filter(r => r.hospitalId === hospital.id && r.business === state.business && r.kind !== 'receive' && can(r.kind)).slice().sort((a, b) => b.time.localeCompare(a.time)).slice(0, 3))
 </script>
 
 <style scoped>
-.app-shell .home-tile { height: 112px; min-height: 112px; flex-direction: row; align-items: center; gap: 10px; padding: 12px; }
-.tile-icon { width: 34px; height: 38px; }
-.tile-stat { margin-top: 8px; padding-top: 0; gap: 4px; flex-wrap: wrap; }
-.tile-count { font-size: 23px; }
-.tile-copy { flex: 1; min-width: 0; }
-.tile-title { font-size: 15px; }
-.tile-subtitle { white-space: normal; overflow-wrap: anywhere; }
-.activity-list { border-top: 0; }
-.activity-item { padding: 15px 12px; border-bottom: 1px solid #e1e9e8; border-left: 3px solid var(--activity-accent); background: var(--activity-background); }
-.activity-accept { --activity-accent: #668bc2; --activity-background: #eff4fb; --activity-title: #436b9b; }
-.activity-dispense { --activity-accent: #5d9b80; --activity-background: #edf6f0; --activity-title: #36745a; }
-.activity-receive { --activity-accent: #c39a57; --activity-background: #fcf5e9; --activity-title: #946e30; }
-.activity-title { color: var(--activity-title); }
-.activity-title .activity-person { color: #637a83; }
-.activity-subtitle, .activity-time { color: #748891; }
-@media (max-width: 360px) {
-  .app-shell .home-tile { gap: 7px; padding: 10px; }
-  .tile-icon { width: 28px; height: 34px; }
-  .tile-title { font-size: 14px; }
-}
+.home-overview { display: flex; align-items: center; gap: 18px; min-height: 90px; margin: 0 calc(0px - var(--gutter)); padding: 18px var(--gutter); border-bottom: 1px solid var(--line); background: #fff; }
+.today-label { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 5px; font-size: 15px; font-weight: 600; }
+.today-weekday { color: var(--muted); font-size: 12px; font-weight: 400; }
+.today-metric { display: flex; flex: 1; min-width: 0; align-items: flex-start; flex-direction: column; gap: 3px; padding-left: 18px; border-left: 1px solid var(--line); color: var(--muted); font-size: 12px; }
+.today-number { color: var(--ink); font-size: 26px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.2; overflow-wrap: anywhere; }
+.operation-list { display: flex; flex-direction: column; gap: 12px; margin: 0 calc(0px - var(--gutter)); }
+.app-shell .operation-row { width: 100%; min-height: 78px; justify-content: flex-start; gap: 12px; padding: 18px var(--gutter); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); border-radius: 0; background: #fff; text-align: left; }
+.app-shell .operation-blue { background: #eff4fd; border-color: #e2eaf6; }
+.app-shell .operation-teal { background: #edf7f3; border-color: #dfede7; }
+.app-shell .operation-amber { background: #fff7ec; border-color: #f3e8d8; }
+.operation-row > .app-icon { opacity: .3; }
+.tile-icon { width: 36px; height: 36px; }
+.operation-title { font-size: 16px; font-weight: 500; overflow-wrap: anywhere; }
+.operation-stat { display: flex; align-items: baseline; justify-content: flex-end; flex-wrap: wrap; gap: 4px; max-width: 42%; color: var(--muted); font-size: 12px; text-align: right; overflow-wrap: anywhere; }
+.operation-count { color: var(--ink); font-size: 18px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.entry-list { margin: 0 calc(0px - var(--gutter)); padding: 0 var(--gutter); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); background: #fff; }
+.app-shell .entry-row { width: 100%; min-height: 57px; justify-content: flex-start; gap: 12px; padding: 13px 0; border-bottom: 1px solid var(--line); border-radius: 0; text-align: left; }.app-shell .entry-row:last-child { border-bottom: 0; }.entry-row > .app-icon { opacity: .5; }.entry-row > .app-icon:last-child { opacity: .3; }.entry-count { color: var(--muted); font-size: 13px; }
+@media (max-width: 360px) { .home-overview { gap: 12px; }.today-metric { padding-left: 12px; }.app-shell .operation-row { gap: 10px; } }
 </style>

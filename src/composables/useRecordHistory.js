@@ -5,6 +5,7 @@ import { dayKey, loadRecordPage, requestContext, toast } from '../domain/pharmac
 export function useRecordHistory(kind) {
   const startTime = ref(dayKey())
   const endTime = ref(dayKey())
+  const patientName = ref('')
   const records = ref([])
   const total = ref(null)
   const loading = ref(false)
@@ -21,7 +22,7 @@ export function useRecordHistory(kind) {
     const currentGeneration = generation
     loading.value = true; error.value = false
     try {
-      const result = await loadRecordPage(kind, { startTime: startTime.value, endTime: endTime.value, pageNum: nextPage, pageSize: 20 })
+      const result = await loadRecordPage(kind, { startTime: startTime.value, endTime: endTime.value, patientName: patientName.value, pageNum: nextPage, pageSize: 20 })
       if (currentGeneration !== generation || requestContext().key !== contextKey) return
       records.value.push(...result.records)
       total.value = result.total
@@ -46,8 +47,12 @@ export function useRecordHistory(kind) {
     startTime.value = start; endTime.value = end
     refresh()
   }
+  function changePatientName(value) {
+    patientName.value = value.trim()
+    return refresh()
+  }
   onShow(refresh)
   onHide(() => { generation++; loading.value = false })
   onReachBottom(() => { if (!error.value) loadMore() })
-  return { startTime, endTime, records, total, loading, hasMore, error, refresh, changeDates, loadMore }
+  return { startTime, endTime, patientName, records, total, loading, hasMore, error, refresh, changeDates, changePatientName, loadMore }
 }

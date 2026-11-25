@@ -1,11 +1,10 @@
 <template>
-  <AppShell title="整单验收" active="waybill-accept" back @business-change="reset">
-    <view class="page-heading"><text class="page-title">运单验收</text><text class="muted">{{ operator.name }}</text></view>
+  <AppShell title="整单验收" active="waybill-accept" back business-picker @business-change="reset" @ward-change="reset">
     <ScanPanel title="扫描运单条码" subtitle="整单到货 · 药包验收" @scan="scan" />
     <view class="input-action"><view class="search-field"><AppIcon name="package" :size="19" /><input v-model="waybillNo" :disabled="busy" placeholder="输入运单号" confirm-type="search" @input="clearResult" @confirm="query" /></view><button class="primary-button compact" :disabled="busy" @click="query">查询</button></view>
     <view class="search-field"><input v-model="companyCode" :disabled="busy" placeholder="物流公司编码（选填）" @input="clearResult" /></view>
     <template v-if="result">
-      <view class="overview-band waybill-overview"><text class="overview-label">{{ result.waybillNo }}</text><view class="waybill-counts"><text>处方 {{ result.prescriptionCount ?? '--' }}</text><text>药包 {{ result.itemCount ?? rows.length }}</text><text>已验收 {{ result.acceptedCount ?? '--' }}</text><text>待验收 {{ result.pendingCount ?? '--' }}</text></view></view>
+      <view class="overview-band waybill-overview"><text class="overview-label">运单 {{ result.waybillNo }}</text><view class="waybill-counts"><view><text>{{ result.prescriptionCount ?? '--' }}</text><text>处方</text></view><view><text>{{ result.itemCount ?? rows.length }}</text><text>药包</text></view><view><text>{{ result.acceptedCount ?? '--' }}</text><text>已验收</text></view><view><text>{{ result.pendingCount ?? '--' }}</text><text>待验收</text></view></view></view>
       <button class="primary-button card-action" :disabled="busy || !pending.length" @click="confirmAll"><AppIcon name="check" :size="18" />整单验收</button>
       <view class="section-heading"><text>运单药包</text><text class="section-meta">{{ rows.length }} 个</text></view>
       <PackageSelection v-if="rows.length" v-model="checkedIds" :rows="rows" :disabled="busy" :selectable="selectable" :blocked-reason="blockedReason" action-label="验收所选处方" confirmation-message="确认验收所选处方在本运单下的全部药包？同一处方的多个批次会一并验收。" @confirm="confirmSelected" />
@@ -73,5 +72,9 @@ async function submit(mode, selected = []) {
 <style scoped>
 .waybill-overview { margin-top: 24px; }
 .overview-label { display: block; overflow-wrap: anywhere; }
-.waybill-counts { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 12px; color: #527765; font-size: 12px; }
+.waybill-counts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 18px; }
+.waybill-counts > view { display: flex; flex-direction: column; gap: 5px; padding-left: 12px; border-left: 1px solid var(--line); }
+.waybill-counts > view:first-child { padding-left: 0; border-left: 0; }
+.waybill-counts > view > text:first-child { font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.waybill-counts > view > text:last-child { color: var(--muted); font-size: 12px; }
 </style>

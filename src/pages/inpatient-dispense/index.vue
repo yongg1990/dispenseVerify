@@ -1,7 +1,6 @@
 <template>
-  <AppShell title="住院发药" active="inpatient-dispense" back nursing @business-change="reset" @conflict="refresh">
+  <AppShell title="住院发药" active="inpatient-dispense" back nursing business-picker @business-change="reset" @ward-change="reset" @conflict="refresh">
     <template v-if="state.business === 'inpatient'">
-      <view class="page-heading"><text class="page-title">{{ currentWard.name }}</text><text class="muted">{{ operator.name }}</text></view>
       <ScanPanel title="扫描药包二维码" subtitle="住院药包 · 发药核验" @scan="scan" />
       <view class="input-action"><view class="search-field"><AppIcon name="scan-line" :size="18" /><input v-model="code" placeholder="输入药包原始码值" confirm-type="search" @confirm="lookup" /></view><button class="primary-button compact" :disabled="loading || submitting" @click="lookup">查询</button></view>
       <PrescriptionCard v-if="selected" :row="selected">

@@ -43,3 +43,12 @@ export function canAccessPage(path, business, session) {
   }
   return false
 }
+
+export function pageForBusiness(path, business, session) {
+  if (canAccessPage(path, business, session)) return path
+  const alternatives = business === 'inpatient'
+    ? { dispense: 'inpatient-dispense' }
+    : { 'inpatient-dispense': 'dispense', 'ward-receive': 'dispense', 'receive-records': 'dispense-records' }
+  const alternative = alternatives[path]
+  return alternative && canAccessPage(alternative, business, session) ? alternative : 'home'
+}

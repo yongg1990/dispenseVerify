@@ -1,5 +1,5 @@
 <template>
-  <AppShell title="患者发药" active="dispense" back nursing @business-change="reset" @conflict="refresh">
+  <AppShell title="患者发药" active="dispense" back nursing business-picker @business-change="reset" @ward-change="reset" @conflict="refresh">
     <view class="record-toolbar"><view class="range-switch entry-switch"><button :class="{ active: entry === 'scan' }" :disabled="submitting" @click="changeEntry('scan')">扫码发药</button><button :class="{ active: entry === 'manual' }" :disabled="submitting" @click="changeEntry('manual')">批量发药</button></view></view>
     <template v-if="entry === 'scan'">
     <view class="workflow-steps"><view :class="{ done: patient }"><text class="step-number">1</text>患者识别</view><view class="step-line" /><view :class="{ done: verified }"><text class="step-number">2</text>药包核对</view><view class="step-line" /><view><text class="step-number">3</text>确认发药</view></view>
@@ -9,7 +9,7 @@
     </template>
     <view class="section-heading"><text>待发药处方</text><text class="section-meta">{{ shown.length }} 条</text></view>
     <view class="input-action"><view class="search-field"><AppIcon name="search" :size="18" /><input v-model="draft" placeholder="姓名 / 登记号 / 处方号 / 证件号" confirm-type="search" @confirm="search" /><button v-if="draft" class="icon-button small-icon" aria-label="清空搜索" @click="clearSearch"><AppIcon name="x" :size="15" /></button></view><button class="primary-button compact" @click="search">搜索</button></view>
-    <view class="filter-line"><text class="filter-chip">已验收未发药</text><text class="filter-chip">来院自取</text><text v-if="patient" class="filter-chip green-chip">当前患者</text></view>
+    <view v-if="patient" class="filter-line"><text class="filter-chip green-chip">{{ patient.name }}的待发药处方</text></view>
     <PackageSelection v-if="entry === 'manual' && shown.length" v-model="checkedIds" compact-details :rows="shown" :selectable="canSelect" :blocked-reason="blockedReason" :disabled="submitting" action-label="确认发药" @confirm="confirmSelected" />
     <template v-if="entry === 'scan'"><PrescriptionCard v-for="row in shown" :key="row.id" :row="row"><button class="secondary-button card-action" @click="open(row)">核对药包<AppIcon name="chevron-right" :size="17" /></button></PrescriptionCard></template>
     <EmptyState v-if="!shown.length" icon-only title="暂无待发药处方" />
@@ -45,7 +45,7 @@ function changeEntry(value) {
 }
 let revision = 0; let queryRevision = 0
 onShow(() => {
-  if (state.business === 'inpatient') { uni.reLaunch({ url: '/pages/ward-receive/index' }); return }
+  if (state.business === 'inpatient') return
   refresh()
 })
 onHide(() => { clearPatient(); close() })
@@ -69,7 +69,7 @@ async function refresh() { try { await refreshRequests([loadRows, () => loadToda
 async function search() { keyword.value = draft.value.trim(); try { await loadRows() } catch (error) { toast(error.message) } }
 function clearSearch() { draft.value = ''; keyword.value = ''; refresh() }
 function clearPatient() { revision++; patient.value = null; patientCode.value = ''; selected.value = null; packageCode.value = ''; verified.value = false; visitExpiresAt = 0; verifiedExpiresAt = 0 }
-function reset() { entry.value = 'scan'; clearPatient(); close(); rows.value = []; checkedIds.value = []; batchErrors.value = {}; clearSearch() }
+function reset() { clearPatient(); close(); rows.value = []; checkedIds.value = []; batchErrors.value = {}; clearSearch() }
 async function identify() {
   if (loading.value || checking.value || submitting.value) return
   const code = patientCode.value

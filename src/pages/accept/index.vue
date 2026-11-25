@@ -1,6 +1,5 @@
 <template>
-  <AppShell title="药包验收" active="accept" back @business-change="reset" @conflict="refresh">
-    <view class="page-heading"><text class="page-title">药房验收</text><text class="muted">{{ operator.name }} · 中药房</text></view>
+  <AppShell title="药包验收" active="accept" back business-picker @business-change="reset" @ward-change="reset" @conflict="refresh">
     <view class="record-toolbar"><view class="range-switch entry-switch"><button :class="{ active: entry === 'scan' }" :disabled="submitting" @click="entry = 'scan'">扫码验收</button><button :class="{ active: entry === 'manual' }" :disabled="submitting" @click="entry = 'manual'">批量验收</button></view></view>
     <template v-if="entry === 'scan'">
     <ScanPanel title="扫描药包二维码" subtitle="药包验收" @scan="scan" />
@@ -9,7 +8,6 @@
     <PrescriptionCard v-for="row in scanned" :key="row.id" :row="row">
       <template v-if="!row.accepted && !row.acceptedAt">
         <button class="primary-button card-action" :disabled="row.canAccept === false || submitting" @click="accept(row.id)"><AppIcon name="check" :size="18" />{{ submitting ? '提交中' : '确认验收' }}</button>
-        <checkbox-group class="sms-reminder"><label class="sms-reminder-label"><checkbox value="sms" :checked="false" disabled color="#147d73" /><text>短信提醒（暂未接入）</text></label></checkbox-group>
       </template>
       <view v-else class="success-inline"><AppIcon name="circle-check" :size="17" /><text>验收完成 · {{ row.acceptedBy }}{{ row.smsSent ? ' · 已发送短信提醒' : '' }}</text></view>
     </PrescriptionCard>
@@ -17,13 +15,11 @@
     </template>
     <template v-else>
       <view class="section-heading"><text>待验收药包</text><text class="section-meta">{{ pending.length }} 个药包</text></view>
-      <PackageSelection v-if="pending.length" v-model="checkedIds" compact-details :rows="pending" :selectable="canSelect" :blocked-reason="row => row.acceptanceBlockedReason" :disabled="submitting" action-label="确认验收" @confirm="acceptSelected">
-        <template #default><text class="small muted">短信提醒暂未接入</text></template>
-      </PackageSelection>
+      <PackageSelection v-if="pending.length" v-model="checkedIds" compact-details :rows="pending" :selectable="canSelect" :blocked-reason="row => row.acceptanceBlockedReason" :disabled="submitting" action-label="确认验收" @confirm="acceptSelected" />
       <EmptyState v-else icon-only title="暂无待验收药包" />
     </template>
     <view class="section-heading"><text>今日验收记录</text><button class="text-button" @click="navigate('accept-records')">全部记录<AppIcon name="chevron-right" :size="15" /></button></view>
-    <view class="compact-record" v-for="record in todayRecords('accept').slice(0, 3)" :key="record.entryId"><view class="grow"><PatientSummary :row="record" prescription-header /><text class="row-subtitle">{{ record.operator }} · {{ record.time }}</text><text v-if="record.smsSent" class="sms-record-note">已发送短信提醒</text></view></view>
+    <view class="compact-record" v-for="record in todayRecords('accept').slice(0, 3)" :key="record.entryId"><view class="grow"><PatientSummary :row="record" ward-in-title prescription-header compact /><text class="row-subtitle">{{ record.operator }} · {{ record.time }}</text><text v-if="record.smsSent" class="sms-record-note">已发送短信提醒</text></view></view>
     <EmptyState v-if="!todayRecords('accept').length" icon-only title="暂无验收记录" />
   </AppShell>
 </template>
@@ -49,7 +45,7 @@ const canSelect = row => !row.accepted && !row.acceptedAt && row.canAccept !== f
 const scanned = computed(() => ids.value.map(id => state.rows.find(r => r.id === id)).filter(Boolean))
 onShow(() => refresh())
 async function refresh() { try { await refreshRequests([() => loadAcceptance(), () => loadToday('accept')]) } catch (error) { toast(error.message) } }
-function reset() { entry.value = 'scan'; code.value = ''; ids.value = []; smsReminders.value = {}; batchSmsReminders.value = {}; checkedIds.value = []; batchErrors.value = {}; refresh() }
+function reset() { code.value = ''; ids.value = []; smsReminders.value = {}; batchSmsReminders.value = {}; checkedIds.value = []; batchErrors.value = {}; refresh() }
 async function lookup() {
   if (loading.value || submitting.value) return
   loading.value = true
@@ -85,10 +81,6 @@ async function acceptSelected(rows) {
 </script>
 
 <style scoped>
-.sms-reminder { margin-top: 16px; }
-.sms-reminder-label { display: flex; align-items: center; gap: 6px; font-size: 14px; color: #405d79; }
-.sms-record-note { display: block; margin-top: 4px; font-size: 12px; color: #147d73; }
-.compact-record { padding: 15px 12px; border-left: 3px solid #668bc2; border-bottom-color: #dfe8f3; background: #eff4fb; }
-.compact-record .row-title { color: #436b9b; }
-.compact-record .row-subtitle, .compact-record .muted { color: #74879c; }
+.sms-record-note { display: block; margin-top: 5px; color: var(--teal); font-size: 12px; }
+.compact-record { margin: 0 calc(0px - var(--gutter)); padding: 16px var(--gutter); background: #fff; }
 </style>

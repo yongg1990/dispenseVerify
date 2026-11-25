@@ -237,12 +237,13 @@ export async function loadToday(kind = 'dispense') {
   else { state.todayDispenseCount = data.todayCount ?? data.total ?? records.length; state.dispenseStatDate = data.statDate || '' }
   return data
 }
-export async function loadRecordPage(kind, { startTime, endTime, pageNum, pageSize = 20 }) {
+export async function loadRecordPage(kind, { startTime, endTime, patientName = '', pageNum, pageSize = 20 }) {
   if (!['accept', 'dispense'].includes(kind)) throw new Error('不支持的明细类型')
   if (!startTime || !endTime || startTime > endTime) throw new Error('开始日期不能晚于结束日期')
   const ctx = requestContext()
   const method = kind === 'accept' ? api.acceptanceRecords : api.dispenseRecords
-  const data = await method({ hospitalCode: ctx.body.hospitalCode, mode: ctx.body.mode, startTime, endTime, pageNum, pageSize }, ctx.session)
+  const name = keywordOf(patientName)
+  const data = await method({ hospitalCode: ctx.body.hospitalCode, mode: ctx.body.mode, startTime, endTime, ...(name ? { patientName: name } : {}), pageNum, pageSize }, ctx.session)
   assertCurrent(ctx)
   if (!Array.isArray(data.records)) throw responseError(data, '明细列表响应格式异常，请重新查询')
   const records = data.records.filter(hasRecordData).map((raw, index) => ({

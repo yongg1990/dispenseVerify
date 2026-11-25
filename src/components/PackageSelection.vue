@@ -12,10 +12,7 @@
           <label class="selection-label" :aria-label="'选择 ' + row.name + ' ' + (row.packageCode || row.no)"><checkbox value="selected" :checked="modelValue.includes(row.id)" :disabled="disabled || !selectable(row)" color="#147d73" /></label>
         </checkbox-group>
         <button class="package-toggle" :aria-expanded="expanded === row.id" @click="toggleExpanded(row)">
-          <PatientSummary :row="row" :ward-in-title="compactDetails">
-            <template v-if="compactDetails" #after-dose><text class="package-usage">{{ row.route }} · {{ row.frequency }}</text></template>
-            <template v-if="compactDetails" #meta-end><text>处方时间：{{ row.prescriptionDate }}</text></template>
-          </PatientSummary>
+          <PatientSummary :row="row" :ward-in-title="compactDetails" :prescription-header="compactDetails" compact />
           <view :class="['expand-icon', { expanded: expanded === row.id }]"><AppIcon name="chevron-right" :size="18" /></view>
         </button>
       </view>
@@ -81,29 +78,29 @@ function toggle(id, event) {
 }
 </script>
 <style scoped>
-.selection-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; border-top: 1px solid #dfe8eb; }
+.selection-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 4px 0 10px; }
 .selection-label { display: flex; align-items: center; gap: 6px; min-height: 40px; font-size: 13px; }
-.package-item { margin-bottom: 8px; border: 1px solid #dfe7ea; border-radius: 6px; background: #fff; overflow: hidden; }
-.package-item.checked { border-color: #72ab9e; }
+.package-item { margin-bottom: 10px; border: 1px solid var(--line); border-radius: 8px; background: #fff; overflow: hidden; }
+.package-item.checked { border-color: #60a99c; }
 .package-heading { display: flex; align-items: center; padding: 0 10px; gap: 6px; }
 .package-checkbox { flex-shrink: 0; }
-.package-usage { min-width: 0; font-size: 12px; font-weight: 400; color: #658297; overflow-wrap: anywhere; }
-.app-shell .package-toggle { flex: 1; min-width: 0; min-height: 64px; justify-content: space-between; gap: 6px; padding: 8px 0; text-align: left; }
+.app-shell .package-toggle { flex: 1; min-width: 0; min-height: 64px; align-items: center; justify-content: space-between; gap: 6px; padding: 8px 0; text-align: left; }
 .expand-icon { display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; flex-shrink: 0; transition: transform .18s; }
 .expand-icon.expanded { transform: rotate(90deg); }
-.package-details { padding: 14px; border-top: 1px solid #e4ecee; }
+.package-details { padding: 16px; border-top: 1px solid var(--line); background: #fcfcfd; }
 .package-details.compact { padding-top: 8px; }
 .package-details.compact .drug-heading { margin-top: 0; }
-.package-metadata { display: flex; justify-content: space-between; gap: 14px; margin-bottom: 9px; font-size: 11px; }
-.package-metadata > text:first-child { flex-shrink: 0; color: #80939b; }
+.package-metadata { display: flex; justify-content: space-between; gap: 14px; margin-bottom: 9px; font-size: 12px; }
+.package-metadata > text:first-child { flex-shrink: 0; color: var(--muted); }
 .package-metadata > text:last-child { min-width: 0; text-align: right; overflow-wrap: anywhere; }
 .drug-heading { display: flex; align-items: center; justify-content: space-between; margin: 16px 0 6px; font-size: 13px; font-weight: 600; }
 .drug-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 16px; }
-.drug-row { display: flex; justify-content: space-between; gap: 6px; padding: 8px 0; border-bottom: 1px solid #edf2f3; font-size: 12px; overflow-wrap: anywhere; }
-.drug-dose { flex-shrink: 0; color: #147d73; }
+.drug-row { display: flex; justify-content: space-between; gap: 6px; padding: 8px 0; font-size: 13px; overflow-wrap: anywhere; }
+.drug-dose { flex-shrink: 0; color: var(--ink); font-variant-numeric: tabular-nums; }
 .app-shell .batch-confirm { width: 100%; margin: 14px 0; }
 .batch-modal { align-items: center; padding: 20px; }
-.batch-dialog { width: 100%; max-width: 360px; padding: 22px; border-radius: 8px; background: #fff; }
+.batch-dialog { width: 100%; max-width: 360px; padding: 24px; border-radius: 8px; background: #fff; }
 .batch-dialog-title { display: block; font-size: 17px; font-weight: 600; }
-.batch-dialog-message { display: block; margin: 14px 0 6px; color: #627b83; font-size: 14px; line-height: 1.6; overflow-wrap: anywhere; }
+.batch-dialog-message { display: block; margin: 14px 0 6px; color: var(--muted); font-size: 14px; line-height: 1.7; overflow-wrap: anywhere; }
+@media (max-width: 400px) { .drug-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 </style>

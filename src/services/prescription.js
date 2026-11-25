@@ -29,12 +29,12 @@ export function getSession() {
   return {
     hospitalCode: env.VITE_HOSPITAL_CODE || '',
     hospitalName: env.VITE_HOSPITAL_NAME || '',
-    wardCode: env.VITE_WARD_CODE || '',
     wardName: env.VITE_WARD_NAME || '',
     operatorName: '',
     operatorId: '',
     department: '',
-    ...saved
+    ...saved,
+    wardCode: saved.wardName ?? env.VITE_WARD_NAME ?? ''
   }
 }
 
@@ -110,8 +110,17 @@ export function requestPrescription(path, data, session = getSession()) {
           reject(error)
           return
         }
-        const result = body.data ?? {}
-        if (typeof result === 'object' && result !== null) responseMessages.set(result, apiMessage(body, { errorOnly: true }))
+        const result = path === '/setting/GetCurrentUserType' && body.data === null
+          ? { orgType: 1 }
+          : body.data ?? {}
+        if (typeof result === 'object' && result !== null) {
+          for (const key of ['accepted', 'dispensed', 'alreadyDispensed', 'received', 'alreadyReceived', 'verified']) {
+            if (typeof result[key] !== 'string') continue
+            const value = result[key].trim().toLowerCase()
+            if (value === 'true' || value === 'false') result[key] = value === 'true'
+          }
+          responseMessages.set(result, apiMessage(body, { errorOnly: true }))
+        }
         resolve(result)
       },
       fail: () => reject(new Error('网络请求失败，请检查网络连接后重新查询'))
