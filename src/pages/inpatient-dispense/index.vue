@@ -1,18 +1,22 @@
 <template>
-  <AppShell title="住院发药" active="inpatient-dispense" back nursing business-picker @business-change="reset" @ward-change="reset" @conflict="refresh">
-    <template v-if="state.business === 'inpatient'">
+  <AppShell title="住院发药" active="inpatient-dispense" back nursing business-picker fixed-content @business-change="reset" @ward-change="reset" @conflict="refresh">
+    <view v-if="state.business === 'inpatient'" class="inpatient-content">
       <ScanPanel title="扫描药包二维码" subtitle="住院药包 · 发药核验" @scan="scan" />
       <view class="input-action"><view class="search-field"><AppIcon name="scan-line" :size="18" /><input v-model="code" placeholder="输入药包原始码值" confirm-type="search" @confirm="lookup" /></view><button class="primary-button compact" :disabled="loading || submitting" @click="lookup">查询</button></view>
-      <PrescriptionCard v-if="selected" :row="selected">
-        <view class="success-inline"><AppIcon name="shield-check" :size="17" />病区核验一致</view>
-        <button class="primary-button card-action" :disabled="submitting || selected.dispensed" @click="confirm">{{ selected.dispensed ? '已发药' : submitting ? '提交中' : '确认发药' }}</button>
-      </PrescriptionCard>
+      <view v-if="selected" class="selected-package">
+        <scroll-view scroll-y class="selected-scroll">
+          <PrescriptionCard :row="selected" default-expanded>
+            <view class="success-inline"><AppIcon name="shield-check" :size="17" />病区核验一致</view>
+          </PrescriptionCard>
+        </scroll-view>
+        <button class="primary-button selected-confirm" :disabled="submitting || selected.dispensed" @click="confirm">{{ selected.dispensed ? '已发药' : submitting ? '提交中' : '确认发药' }}</button>
+      </view>
       <view class="section-heading"><text>待发药处方</text><text class="section-meta">{{ pending.length }} 条</text></view>
-      <view class="input-action"><view class="search-field"><AppIcon name="search" :size="18" /><input v-model="keyword" placeholder="姓名 / 登记号 / 处方号 / 住院号 / 床号" confirm-type="search" @confirm="refresh" /></view><button class="secondary-button compact" :disabled="submitting" @click="refresh">搜索</button></view>
-      <PackageSelection v-if="pending.length" v-model="checkedIds" :rows="pending" compact-details :selectable="canSelect" :blocked-reason="blockedReason" :disabled="submitting" action-label="确认发药" @confirm="confirmSelected" />
+      <view class="input-action"><view class="search-field"><AppIcon name="search" :size="18" /><input v-model="keyword" placeholder="患者姓名" confirm-type="search" @confirm="refresh" /></view><button class="secondary-button compact" :disabled="submitting" @click="refresh">搜索</button></view>
+      <PackageSelection v-if="pending.length" v-model="checkedIds" :rows="pending" compact-details scrollable :selectable="canSelect" :blocked-reason="blockedReason" :disabled="submitting" action-label="确认发药" @confirm="confirmSelected" />
       <EmptyState v-else icon-only title="暂无待发药处方" />
       <button class="record-link" @click="navigate('dispense-records')"><AppIcon name="file-check-2" :size="20" /><text class="grow">今日住院发药</text><text>{{ todayCount('dispense') }} 条</text><AppIcon name="chevron-right" :size="18" /></button>
-    </template>
+    </view>
     <EmptyState v-else title="住院发药仅适用于住院业务" />
   </AppShell>
 </template>
@@ -72,3 +76,13 @@ async function confirmSelected(rows) {
   } finally { submitting.value = false }
 }
 </script>
+<style scoped>
+.inpatient-content { display: flex; flex: 1; flex-direction: column; min-height: 0; padding: 20px var(--gutter) 0; overflow: hidden; }
+.inpatient-content > :not(.package-selection):not(.selected-package):not(.empty-state) { flex-shrink: 0; }
+.inpatient-content .section-heading { margin-top: 10px; }
+.selected-package { display: flex; flex: 0 1 auto; flex-direction: column; min-height: 0; max-height: 38%; }
+.selected-scroll { flex: 1; height: 180px; min-height: 0; }
+.app-shell .selected-confirm { flex-shrink: 0; width: 100%; }
+.inpatient-content .empty-state { flex: 1; min-height: 0; }
+.app-shell .inpatient-content .record-link { margin-top: 12px; }
+</style>

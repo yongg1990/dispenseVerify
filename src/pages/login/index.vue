@@ -13,7 +13,7 @@
         <view v-if="hospitalFailed" class="sheet-actions"><button class="secondary-button" :disabled="hospitalLoading || leaving" @click="restartLogin">{{ leaving ? '退出中' : '重新登录' }}</button><button class="primary-button" :disabled="hospitalLoading || leaving" @click="completeLogin">重试</button></view>
       </view>
     </view>
-    <WardDialog :visible="wardVisible" cancel-text="重新登录" @confirm="confirmWard" @cancel="restartLogin" />
+    <WardDialog :visible="wardVisible" :hospital-name="getSession().hospitalName" cancel-text="重新登录" @confirm="confirmWard" @cancel="restartLogin" />
   </view>
 </template>
 <script setup>
@@ -55,15 +55,15 @@ async function completeLogin() {
     if (getSession().token !== session.token) return
     hospitalVisible.value = false
     const current = getSession()
-    if (!canUseBusiness('outpatient', current) && canUseBusiness('inpatient', current) && !current.wardName?.trim()) {
+    if (!canUseBusiness('outpatient', current) && canUseBusiness('inpatient', current) && (!current.wardCode || !current.wardName?.trim())) {
       wardVisible.value = true
     } else enterHome()
   } catch (error) { hospitalFailed.value = true; toast(error.message) } finally { hospitalLoading.value = false }
 }
-function confirmWard(wardName) {
+function confirmWard({ wardCode, wardName, hospitalName }) {
   const session = getSession()
-  if (!session.token) return
-  saveSession({ ...session, wardName, wardCode: wardName })
+  if (!session.token || hospitalName !== session.hospitalName) return
+  saveSession({ ...session, wardName, wardCode })
   wardVisible.value = false
   enterHome()
 }

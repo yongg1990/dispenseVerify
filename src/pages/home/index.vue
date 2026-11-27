@@ -1,23 +1,22 @@
 <template>
-  <AppShell title="工作台" active="home" business-picker @business-change="refresh" @ward-change="refresh" @conflict="refresh">
+  <AppShell class="home-page" title="工作台" active="home" business-picker @business-change="refresh" @ward-change="refresh" @conflict="refresh">
     <template #header-caption><HospitalSwitcher compact @change="refreshHospital" /></template>
     <view class="home-overview">
       <view class="today-label"><text>{{ dateText }}</text><text class="today-weekday">{{ weekday }}</text></view>
       <view v-if="can('accept')" class="today-metric"><text class="today-number">{{ todayCount('accept') }}</text><text>已验收</text></view>
       <view v-if="can('dispense')" class="today-metric"><text class="today-number">{{ todayCount('dispense') }}</text><text>已发药</text></view>
     </view>
-    <view class="section-heading"><text>业务办理</text></view>
-    <view class="operation-list">
-      <button v-for="tile in operationTiles" :key="tile.path" :class="['operation-row', `operation-${tile.color}`]" @click="navigate(tile.path)">
+    <view class="home-content">
+    <view class="section-heading"><text>业务办理</text><text class="section-meta">{{ businessLabel }}业务</text></view>
+    <view class="operation-grid">
+      <button v-for="tile in visibleTiles" :key="tile.path" class="operation-card" @click="navigate(tile.path)">
         <view :class="['tile-icon', tile.color]"><AppIcon :name="tile.icon" :size="23" /></view>
-        <text class="grow operation-title">{{ tile.title }}</text>
-        <view class="operation-stat"><text v-if="tile.count !== ''" class="operation-count">{{ tile.count }}</text><text>{{ tile.unit }}</text></view>
-        <AppIcon name="chevron-right" :size="16" />
+        <view class="operation-copy">
+          <text class="operation-title">{{ tile.title }}</text>
+          <text class="operation-subtitle">{{ tile.subtitle }}</text>
+          <view class="operation-stat"><text v-if="tile.count !== ''" class="operation-count">{{ tile.count }}</text><text class="operation-unit">{{ tile.unit }}</text></view>
+        </view>
       </button>
-    </view>
-    <view class="section-heading"><text>业务明细</text></view>
-    <view class="entry-list">
-      <button v-for="tile in recordTiles" :key="tile.path" class="entry-row" @click="navigate(tile.path)"><AppIcon :name="tile.icon" :size="20" /><text class="grow">{{ tile.title }}</text><text class="entry-count">{{ tile.count }}</text><AppIcon name="chevron-right" :size="16" /></button>
     </view>
     <view class="section-heading recent-heading"><text>最近操作</text><button class="text-button" @click="navigate(can('dispense') ? 'dispense-records' : 'accept-records')">查看全部<AppIcon name="chevron-right" :size="14" /></button></view>
     <view class="activity-list">
@@ -28,6 +27,7 @@
       </view>
     </view>
     <EmptyState v-if="!recent.length" icon-only title="暂无最近操作" />
+    </view>
   </AppShell>
 </template>
 <script setup>
@@ -39,7 +39,7 @@ import EmptyState from '../../components/EmptyState.vue'
 import HospitalSwitcher from '../../components/HospitalSwitcher.vue'
 import { getSession } from '../../services/prescription'
 import { canAccessPage } from '../../services/permissions'
-import { state, hospital, todayCount, defaultDispenseRows, refreshOverview, navigate, toast, can } from '../../domain/pharmacy'
+import { state, hospital, businessLabel, todayCount, defaultDispenseRows, refreshOverview, navigate, toast, can } from '../../domain/pharmacy'
 const now = ref(new Date())
 const dateText = computed(() => `${now.value.getMonth() + 1}月${now.value.getDate()}日`)
 const weekday = computed(() => ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'][now.value.getDay()])
@@ -64,28 +64,47 @@ const tiles = computed(() => [
   { path: 'accept-records', icon: 'clipboard-list', color: 'amber', title: '验收明细', subtitle: '药包验收操作记录', count: todayCount('accept'), unit: '条今日验收' },
   { path: 'dispense-records', icon: 'file-check-2', color: 'violet', title: '发药明细', subtitle: '患者发药操作记录', count: todayCount('dispense'), unit: '条今日发药' }
 ].filter(tile => canAccessPage(tile.path, state.business, getSession())))
-const operationTiles = computed(() => tiles.value.filter(tile => !tile.path.endsWith('-records')))
-const recordTiles = computed(() => tiles.value.filter(tile => tile.path.endsWith('-records')))
+const visibleTiles = computed(() => tiles.value.filter(tile => tile.path !== 'waybill-accept'))
 const recent = computed(() => state.records.filter(r => r.hospitalId === hospital.id && r.business === state.business && r.kind !== 'receive' && can(r.kind)).slice().sort((a, b) => b.time.localeCompare(a.time)).slice(0, 3))
 </script>
 
 <style scoped>
+.home-page { background: #f4f7f8; }
 .home-overview { display: flex; align-items: center; gap: 18px; min-height: 90px; margin: 0 calc(0px - var(--gutter)); padding: 18px var(--gutter); border-bottom: 1px solid var(--line); background: #fff; }
 .today-label { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 5px; font-size: 15px; font-weight: 600; }
 .today-weekday { color: var(--muted); font-size: 12px; font-weight: 400; }
 .today-metric { display: flex; flex: 1; min-width: 0; align-items: flex-start; flex-direction: column; gap: 3px; padding-left: 18px; border-left: 1px solid var(--line); color: var(--muted); font-size: 12px; }
 .today-number { color: var(--ink); font-size: 26px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.2; overflow-wrap: anywhere; }
-.operation-list { display: flex; flex-direction: column; gap: 12px; margin: 0 calc(0px - var(--gutter)); }
-.app-shell .operation-row { width: 100%; min-height: 78px; justify-content: flex-start; gap: 12px; padding: 18px var(--gutter); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); border-radius: 0; background: #fff; text-align: left; }
-.app-shell .operation-blue { background: #eff4fd; border-color: #e2eaf6; }
-.app-shell .operation-teal { background: #edf7f3; border-color: #dfede7; }
-.app-shell .operation-amber { background: #fff7ec; border-color: #f3e8d8; }
-.operation-row > .app-icon { opacity: .3; }
-.tile-icon { width: 36px; height: 36px; }
-.operation-title { font-size: 16px; font-weight: 500; overflow-wrap: anywhere; }
-.operation-stat { display: flex; align-items: baseline; justify-content: flex-end; flex-wrap: wrap; gap: 4px; max-width: 42%; color: var(--muted); font-size: 12px; text-align: right; overflow-wrap: anywhere; }
-.operation-count { color: var(--ink); font-size: 18px; font-weight: 500; font-variant-numeric: tabular-nums; }
-.entry-list { margin: 0 calc(0px - var(--gutter)); padding: 0 var(--gutter); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); background: #fff; }
-.app-shell .entry-row { width: 100%; min-height: 57px; justify-content: flex-start; gap: 12px; padding: 13px 0; border-bottom: 1px solid var(--line); border-radius: 0; text-align: left; }.app-shell .entry-row:last-child { border-bottom: 0; }.entry-row > .app-icon { opacity: .5; }.entry-row > .app-icon:last-child { opacity: .3; }.entry-count { color: var(--muted); font-size: 13px; }
-@media (max-width: 360px) { .home-overview { gap: 12px; }.today-metric { padding-left: 12px; }.app-shell .operation-row { gap: 10px; } }
+.home-content { padding-top: 24px; color: #24424f; }
+.section-meta { color: #8395a1; font-size: 11px; }
+.operation-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.app-shell .operation-card { width: 100%; min-height: 112px; justify-content: flex-start; gap: 10px; padding: 16px 12px; border: 1px solid #dce6eb; border-radius: 8px; background: #fff; text-align: left; }
+.tile-icon { width: 34px; height: 38px; border-radius: 7px; }
+.operation-copy { flex: 1; min-width: 0; }
+.operation-title { display: block; color: #24424f; font-size: 15px; font-weight: 600; overflow-wrap: anywhere; }
+.operation-subtitle { display: block; margin-top: 4px; color: #8395a1; font-size: 11px; overflow-wrap: anywhere; }
+.operation-stat { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.operation-count { min-width: 0; color: #315760; font-size: 22px; line-height: 1.2; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.operation-unit { color: #8395a1; font-size: 11px; overflow-wrap: anywhere; }
+.recent-heading { margin-top: 28px; }
+.app-shell .recent-heading .text-button { color: #8395a1; font-size: 11px; }
+.activity-list { margin: 0; padding: 0; border: 0; background: transparent; }
+.activity-item { min-height: 70px; gap: 12px; padding: 12px; border-bottom: 1px solid #dce6eb; border-left: 3px solid #5ca88c; background: #ebf6f0; }
+.activity-item:last-child { border-bottom: 1px solid #dce6eb; }
+.activity-accept { border-left-color: #658bc8; background: #eff4fc; }
+.activity-receive { border-left-color: #d1a05a; background: #fbf4e9; }
+.activity-title { color: #147d73; font-size: 12px; font-weight: 600; overflow-wrap: anywhere; }
+.activity-accept .activity-title { color: #436b9b; }
+.activity-receive .activity-title { color: #9a743d; }
+.activity-person { margin-left: 10px; color: #526e7b; font-size: 12px; }
+.activity-subtitle { margin-top: 4px; color: #8395a1; font-size: 11px; }
+.activity-time { color: #6686a3; font-size: 10px; }
+@media (max-width: 360px) {
+  .home-overview { gap: 12px; }
+  .today-metric { padding-left: 12px; }
+  .operation-grid { gap: 10px; }
+  .app-shell .operation-card { gap: 8px; padding: 14px 10px; }
+  .tile-icon { width: 30px; height: 34px; }
+  .operation-title { font-size: 14px; }
+}
 </style>

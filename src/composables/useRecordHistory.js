@@ -1,5 +1,5 @@
 import { ref } from 'vue'
-import { onShow, onHide, onReachBottom } from '@dcloudio/uni-app'
+import { onShow, onHide } from '@dcloudio/uni-app'
 import { dayKey, loadRecordPage, requestContext, toast } from '../domain/pharmacy'
 
 export function useRecordHistory(kind) {
@@ -53,6 +53,5 @@ export function useRecordHistory(kind) {
   }
   onShow(refresh)
   onHide(() => { generation++; loading.value = false })
-  onReachBottom(() => { if (!error.value) loadMore() })
   return { startTime, endTime, patientName, records, total, loading, hasMore, error, refresh, changeDates, changePatientName, loadMore }
 }

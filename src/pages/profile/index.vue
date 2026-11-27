@@ -1,7 +1,7 @@
 <template>
-  <AppShell title="我的" active="profile" nursing business-picker hide-avatar>
-    <template #header-caption></template>
-    <view class="identity-row"><view class="identity-avatar">{{ operator.name.slice(0, 1) }}</view><view class="grow"><text class="identity-name">{{ operator.name }}</text><text v-if="operator.department && operator.department !== '--'" class="profile-caption">{{ operator.department }}</text></view></view>
+  <AppShell class="profile-shell" :title="operator.name" active="profile" nursing business-picker hide-avatar>
+    <template #header-leading><view class="identity-avatar">{{ operator.name.slice(0, 1) }}</view></template>
+    <template #header-caption><view><text v-if="operator.department && operator.department !== '--'" class="profile-caption">{{ operator.department }}</text></view></template>
     <view class="profile-list">
       <view class="profile-row"><text class="profile-label">所属医院</text><text class="profile-value">{{ hospital.name }}</text></view>
       <view class="profile-row"><text class="profile-label">医院编码</text><text class="profile-value identifier">{{ hospital.id || '--' }}</text></view>
@@ -52,10 +52,11 @@ async function logout() {
 </script>
 
 <style scoped>
-.identity-row { display: flex; align-items: center; gap: 16px; margin: -20px calc(0px - var(--gutter)) 24px; padding: 24px var(--gutter); border-bottom: 1px solid var(--line); background: #fff; }
-.identity-avatar { display: flex; flex: 0 0 54px; align-items: center; justify-content: center; width: 54px; height: 54px; border-radius: 50%; background: #edf3f1; color: var(--teal); font-size: 23px; font-weight: 500; }
-.identity-name { display: block; font-size: 21px; font-weight: 600; overflow-wrap: anywhere; }
-.profile-caption { display: block; margin-top: 5px; color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+.profile-shell :deep(.app-header) { padding-top: calc(20px + env(safe-area-inset-top)); padding-bottom: 20px; }
+.profile-shell :deep(.header-title-row) { justify-content: space-between; gap: 8px 16px; }
+.profile-shell :deep(.header-title) { flex-shrink: 1; min-width: 0; font-size: 18px; overflow-wrap: anywhere; }
+.identity-avatar { display: flex; flex: 0 0 48px; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 50%; background: #edf3f1; color: var(--teal); font-size: 20px; font-weight: 500; }
+.profile-caption { display: block; margin-top: 4px; color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
 .profile-list { margin: 0 calc(0px - var(--gutter)); padding: 0 var(--gutter); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); background: #fff; }
 .action-list { margin-top: 20px; }
 .profile-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 58px; padding: 16px 0; border-bottom: 1px solid var(--line); font-size: 14px; }

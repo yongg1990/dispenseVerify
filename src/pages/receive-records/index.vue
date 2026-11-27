@@ -1,5 +1,5 @@
 <template>
-  <AppShell title="接收明细" active="receive-records" back nursing business-picker @business-change="refresh" @ward-change="refresh">
+  <AppShell title="接收明细" active="receive-records" back nursing business-picker fixed-content @business-change="refresh" @ward-change="refresh">
     <RecordList v-if="state.business === 'inpatient'" :key="state.business" kind="receive" />
     <EmptyState v-else title="病区接收仅适用于住院业务" />
   </AppShell>

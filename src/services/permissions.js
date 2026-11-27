@@ -13,9 +13,6 @@ function findProject(resources) {
 }
 
 export function loginPermissions(loginInfo) {
-  if (Number(loginInfo?.user?.personType) > 0) {
-    return { outpatient: { accept: true, dispense: true }, inpatient: { accept: true, dispense: true } }
-  }
   const project = findProject(loginInfo?.viewLoginResources)
   const actions = new Set((Array.isArray(project?.children) ? project.children : []).map(row => row.actionUrl))
   return Object.fromEntries(Object.entries(resourceNames).map(([business, names]) => [

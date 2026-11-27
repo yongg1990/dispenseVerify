@@ -35,7 +35,7 @@ export function requestContext() {
 function assertCurrent(ctx) {
   if (requestContext().key !== ctx.key) throw new Error('业务或登录上下文已切换，请重新操作')
 }
-function requireWard(ctx) { if (!ctx.body.wardCode && !ctx.body.wardName) throw new Error('请先填写病区名称') }
+function requireWard(ctx) { if (!ctx.body.wardCode && !ctx.body.wardName) throw new Error('请先选择病区') }
 export function matchesCurrentWard(row) {
   const session = getSession()
   return session.wardCode
@@ -80,7 +80,8 @@ export function mapPrescription(raw) {
     bed: raw.bedNo ?? '', wardId: raw.wardCode ?? raw.ward ?? '', wardCode: raw.wardCode ?? raw.ward ?? '', wardName: raw.wardName ?? raw.wardCode ?? raw.ward ?? '', route: raw.route ?? '--', frequency: raw.frequency ?? '--',
     packageCode: raw.packageCode ?? raw.executionRecordId ?? raw.scanCode ?? '--',
     batch: raw.executionRecordId ?? '--', split: !!raw.executionRecordId, prescriptionDate: raw.prescriptionDate ?? '--',
-    acceptedAt: raw.acceptedAt ?? '', acceptedBy: raw.acceptedByName ?? '--', receivedAt: raw.receivedAt ?? '', ingredients: raw.ingredients ?? []
+    acceptedAt: raw.acceptedAt ?? '', acceptedBy: raw.acceptedByName ?? '--', smsSent: raw.smsSent === true,
+    receivedAt: raw.receivedAt ?? '', ingredients: raw.ingredients ?? []
   }
 }
 function storeRows(records) {
@@ -135,22 +136,21 @@ export async function acceptPackage(id, smsReminder = true) {
   const row = state.rows.find(item => item.id === id)
   if (!row?.recordId) throw new Error('缺少接口返回的处方记录ID，请重新加载')
   if (row.canAccept === false) throw new Error(row.acceptanceBlockedReason || '当前药包不可验收')
-  const data = await api.acceptanceConfirm({ ...ctx.body, recordId: row.recordId, executionRecordId: row.executionRecordId ?? null, ...(row.logisticsRecordId ? { logisticsRecordId: row.logisticsRecordId } : {}), ...(row.waybillNo ? { waybillNo: row.waybillNo } : {}), ...(useStaticData ? { smsReminder } : {}) }, ctx.session)
+  const data = await api.acceptanceConfirm({ ...ctx.body, recordId: row.recordId, executionRecordId: row.executionRecordId ?? null, ...(row.logisticsRecordId ? { logisticsRecordId: row.logisticsRecordId } : {}), ...(row.waybillNo ? { waybillNo: row.waybillNo } : {}), smsReminder: smsReminder === true }, ctx.session)
   assertCurrent(ctx)
   if (data.accepted !== true) throw responseError(data, '接口未返回验收成功，请重新查询药包状态')
   row.accepted = true
+  row.smsSent = data.smsSent === true
   if (useStaticData) Object.assign(row, mapPrescription(data))
   return data
 }
 export async function searchDispense(value = '') {
   const ctx = requestContext(); const keyword = keywordOf(value)
   if (ctx.body.mode === '2') requireWard(ctx)
-  const searchTypes = ctx.body.mode === '2' ? ['NAME', 'REGISTRATION_NO', 'PRESCRIPTION_NO', 'INPATIENT_NO', 'BED_NO'] : ['NAME', 'REGISTRATION_NO', 'PRESCRIPTION_NO', 'ID_CARD']
-  // Preserve the single search box by merging its supported search fields.
-  const results = keyword ? await Promise.all(searchTypes.map(searchType => fetchPages(api.dispensePage, { ...ctx.body, keyword, searchType }, ctx))) : [await fetchPages(api.dispensePage, ctx.body, ctx)]
+  const data = await fetchPages(api.dispensePage, { ...ctx.body, ...(keyword ? { keyword, searchType: 'NAME' } : {}) }, ctx)
   assertCurrent(ctx)
   const unique = new Map()
-  for (const raw of results.flatMap(result => result.records)) unique.set(JSON.stringify([raw.recordId, raw.executionRecordId ?? null]), raw)
+  for (const raw of data.records) unique.set(JSON.stringify([raw.recordId, raw.executionRecordId ?? null]), raw)
   state.dispenseRows = storeRows([...unique.values()])
   return state.dispenseRows
 }

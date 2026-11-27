@@ -34,7 +34,7 @@ export function getSession() {
     operatorId: '',
     department: '',
     ...saved,
-    wardCode: saved.wardName ?? env.VITE_WARD_NAME ?? ''
+    wardCode: saved.wardCode ?? env.VITE_WARD_CODE ?? ''
   }
 }
 
@@ -61,12 +61,12 @@ export function isLoggedIn() {
   const business = session.business === 'inpatient' ? 'inpatient' : 'outpatient'
   const inpatientOnly = !canUseBusiness('outpatient', session) && canUseBusiness('inpatient', session)
   return !!(session.token && session.hospitalCode && session.hospitalName && !session.hospitalSelectionRequired &&
-    canUseBusiness(business, session) && (!inpatientOnly || session.wardName?.trim()))
+    canUseBusiness(business, session) && (!inpatientOnly || (session.wardCode && session.wardName?.trim())))
 }
 
 export function requestPrescription(path, data, session = getSession()) {
   if (useStaticData) return staticPrescription(path, data)
-  const setupRequest = ['/preInstitutionInfo/list', '/setting/GetCurrentUserType'].includes(path)
+  const setupRequest = ['/preInstitutionInfo/list', '/setting/GetCurrentUserType', '/preDepartmentInfo/listByHospital'].includes(path)
   const recordsRequest = ['/pharmacy/dispense/records', '/pharmacy/acceptance/records'].includes(path)
   const baseUrl = (setupRequest || recordsRequest ? '/api2/axd' : (env.VITE_PRESCRIPTION_API_BASE || '/api2/axd')).replace(/\/$/, '')
   return new Promise((resolve, reject) => {
@@ -83,7 +83,7 @@ export function requestPrescription(path, data, session = getSession()) {
       if (!permitted) { reject(new Error('暂无该业务权限，请联系管理员')); return }
     }
     if (data.mode === '2' && path.includes('/ward-receive/') && !data.wardCode && !data.wardName) {
-      reject(new Error('请先填写病区名称')); return
+      reject(new Error('请先选择病区')); return
     }
     uni.request({
       url: `${baseUrl}${path}`,
@@ -131,6 +131,7 @@ export function requestPrescription(path, data, session = getSession()) {
 export const prescriptionApi = {
   currentUserType: (body, session) => requestPrescription('/setting/GetCurrentUserType', body, session),
   institutionList: (body, session) => requestPrescription('/preInstitutionInfo/list', body, session),
+  departmentList: (body, session) => requestPrescription('/preDepartmentInfo/listByHospital', body, session),
   acceptanceRecords: (body, session) => requestPrescription('/pharmacy/acceptance/records', body, session),
   dispenseRecords: (body, session) => requestPrescription('/pharmacy/dispense/records', body, session),
   hospitalAcceptanceQuery: (body, session) => requestPrescription('/hospital-acceptance/query', body, session),

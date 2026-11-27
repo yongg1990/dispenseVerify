@@ -1,5 +1,5 @@
 <template>
-  <AppShell title="验收明细" active="accept-records" back business-picker @business-change="refresh" @ward-change="refresh">
+  <AppShell title="验收明细" active="accept-records" back business-picker fixed-content @business-change="refresh" @ward-change="refresh">
     <RecordList :key="state.business" kind="accept" paginated :records="records" :total="total" :start-time="startTime" :end-time="endTime" :patient-name="patientName" :loading="loading" :has-more="hasMore" :load-error="error" @date-change="changeDates" @patient-name-change="changePatientName" @load-more="loadMore" />
   </AppShell>
 </template>

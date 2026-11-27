@@ -1,12 +1,12 @@
 <template>
   <view v-if="Number(session.orgType) === 1 || compact" :class="['hospital-switcher', { compact }]">
     <text v-if="Number(session.orgType) !== 1" class="hospital-name">{{ session.hospitalName }}</text>
-    <picker v-else-if="hospitals.length" class="hospital-picker" :range="hospitals" range-key="label" :value="selectedIndex" :disabled="loading || wardVisible" @change="changeHospital">
+    <picker v-else-if="hospitals.length" class="hospital-picker" :range="hospitals" range-key="hospitalName" :value="selectedIndex" :disabled="loading || wardVisible" @change="changeHospital">
       <view class="hospital-choice"><AppIcon v-if="!compact" name="hospital" :size="18" /><text>{{ session.hospitalName }}</text><AppIcon :class="{ 'hospital-arrow': compact }" name="chevron-right" :size="compact ? 12 : 16" /></view>
     </picker>
     <text v-else-if="loading" class="muted">机构加载中…</text>
     <button v-else class="text-button" @click="load">切换机构<AppIcon name="chevron-right" :size="14" /></button>
-    <WardDialog :visible="wardVisible" @confirm="confirmWard" @cancel="cancelChange" />
+    <WardDialog :visible="wardVisible" :hospital-name="pendingHospital?.hospitalName || ''" @confirm="confirmWard" @cancel="cancelChange" />
   </view>
 </template>
 <script setup>
@@ -22,7 +22,7 @@ const session = computed(() => getSession())
 const hospitals = ref([])
 const loading = ref(false)
 const wardVisible = ref(false)
-let pendingHospital = null
+const pendingHospital = ref(null)
 let loadedToken = ''
 const selectedIndex = computed(() => Math.max(0, hospitals.value.findIndex(row => row.hospitalCode === session.value.hospitalCode)))
 onMounted(() => { if (Number(session.value.orgType) === 1) load() })
@@ -40,17 +40,19 @@ async function load() {
 function changeHospital(event) {
   const selected = hospitals.value[Number(event.detail.value)]
   if (!selected || selected.hospitalCode === session.value.hospitalCode) return
-  pendingHospital = selected
+  pendingHospital.value = selected
   if (state.business === 'inpatient') { wardVisible.value = true; return }
   applyHospital()
 }
-function confirmWard(wardName) { applyHospital(wardName) }
-function cancelChange() { wardVisible.value = false; pendingHospital = null }
-function applyHospital(wardName = '') {
+function confirmWard(ward) {
+  if (ward.hospitalName === pendingHospital.value?.hospitalName) applyHospital(ward)
+}
+function cancelChange() { wardVisible.value = false; pendingHospital.value = null }
+function applyHospital(ward = null) {
   const current = getSession()
-  if (!pendingHospital || current.token !== loadedToken || Number(current.orgType) !== 1) { cancelChange(); return }
-  const { hospitalCode, hospitalName } = pendingHospital
-  saveSession({ ...current, hospitalCode, hospitalName, wardCode: wardName, wardName })
+  if (!pendingHospital.value || current.token !== loadedToken || Number(current.orgType) !== 1) { cancelChange(); return }
+  const { hospitalCode, hospitalName } = pendingHospital.value
+  saveSession({ ...current, hospitalCode, hospitalName, wardCode: ward?.wardCode || '', wardName: ward?.wardName || '' })
   requestContext()
   cancelChange()
   emit('change')
